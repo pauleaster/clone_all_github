@@ -2,14 +2,27 @@ import os
 import requests
 import subprocess
 
-# Read the username from the shell environment variable
-username = os.environ["GITHUB_USERNAME"]
+# Need to execute the following commands in your terminal before running this:
+# GITHUB_USERNAME=githubusername
+# GITHUB_PARENT_DIR=/base/destination/dir/for/all/repos
 
-# Read the parent directory from the shell environment variable
-parent_dir = os.environ["GITHUB_PARENT_DIR"]
 
+try:
+    # Read the username from the shell environment variable
+    username = os.environ["GITHUB_USERNAME"]
+
+    # Read the parent directory from the shell environment variable
+    parent_dir = os.environ["GITHUB_PARENT_DIR"]
+    print(f"username={username}")
+    print(f"parent_dir={parent_dir}")
+except:
+    print("Failed to read the einvironemnt vars")
+    exit(-1)
 # Create the parent directory if it doesn't already exist
 os.makedirs(parent_dir, exist_ok=True)
+
+# Set the base URL for the GitHub REST API
+base_url = "https://api.github.com"
 
 def checkout_remote_branches(repo_dir):
     os.chdir(repo_dir)
