@@ -1,6 +1,7 @@
 import os
 import requests
 import subprocess
+import json
 
 # Need to execute the following commands in your terminal before running this:
 # GITHUB_USERNAME=githubusername
@@ -21,7 +22,7 @@ except:
 # Create the parent directory if it doesn't already exist
 os.makedirs(parent_dir, exist_ok=True)
 
-# Set the base URL for the GitHub REST API
+# Set the base URL for the GitHub REST APIrns
 base_url = "https://api.github.com"
 
 def checkout_remote_branches(repo_dir):
@@ -31,21 +32,42 @@ def checkout_remote_branches(repo_dir):
     branches = branches_output.decode().split("\n")
     print(branches)
     for branch in branches:
-        if branch.strip() != "origin/HEAD" and not branch.strip().startswith("origin/tags"):
+        if ( "origin/HEAD" not in branch.strip() ) and not branch.strip().startswith("origin/tags"):
             this_branch = branch.strip()
             if len(this_branch) > 0:
                 print(f"git checkout --track {branch.strip()}")
                 subprocess.run(["git", "checkout", "--track", branch.strip()])
 
 # Construct the API endpoint to retrieve the list of repositories for the user
-repos_endpoint = f"{base_url}/users/{username}/repos"
 
-# Send a GET request to the API endpoint and parse the JSON response
-response = requests.get(repos_endpoint)
-repos = response.json()
+
+def get_all_repos():
+    repos_endpoint = f"{base_url}/users/{username}/repos"
+    repos = []
+
+    page = 1
+    per_page = 100
+    while True:
+        response = requests.get(repos_endpoint, params={"page": page, "per_page": per_page})
+        if not response.ok or not response.json():
+            break
+
+        page_repos = response.json()
+        repos.extend(page_repos)
+
+        if len(page_repos) < per_page:
+            break
+
+        page += 1
+
+    return repos
+
+# Retrieve all repositories for the user
+repos = get_all_repos()
 
 # Clone or pull each repository locally using Git
 for repo in repos:
+    # print(f"************{repo['name']}*********************")
     repo_dir = os.path.join(parent_dir, repo["name"])
     if os.path.isdir(repo_dir):
         print(f"Updating {repo['name']}...")
